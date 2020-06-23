@@ -1125,6 +1125,44 @@ type CourseRole struct {
 	ShortName string `json:"shortname"`
 }
 
+func (m *MoodleApi) GetCoursePersonsList(courseId int64) (*[]Person, error) {
+	url := fmt.Sprintf("%swebservice/rest/server."+
+		"php?wstoken=%s&wsfunction=%s&moodlewsrestformat=json&courseid=%d", m.base,
+		m.token, "core_enrol_get_enrolled_users", courseId)
+	m.log.Debug("Fetch: %s", url)
+	body, _, _, err := m.fetch.GetUrl(url)
+	if err != nil {
+		return nil, err
+	}
+
+	if strings.HasPrefix(body, "{\"exception\":\"") {
+		message := readError(body)
+		return nil, errors.New(message + ". " + url)
+	}
+	var results []Person
+	if err := json.Unmarshal([]byte(body), &results); err != nil {
+		return nil, errors.New("Server returned unexpected response. " + err.Error())
+	}
+
+	return &results, nil
+}
+
+func (m *MoodleApi) GetCompletionActivityStatus(courseId, userId int64) {
+	url := fmt.Sprintf("%swebservice/rest/server."+
+		"php?wstoken=%s&wsfunction=%s&moodlewsrestformat=json&courseid=%d&userid=%d",
+		m.base,
+		m.token, "core_completion_get_course_completion_status", courseId, userId)
+	m.log.Debug("Fetch: %s", url)
+	body, _, _, err := m.fetch.GetUrl(url)
+	if err != nil {
+		//return nil, err
+		return
+	}
+	if strings.HasPrefix(body, "{\"exception\":\"") {
+		_ = readError(body)
+		//return nil, errors.New(message + ". " + url)
+	}
+}
 func (m *MoodleApi) GetPersonCourseList(userId int64) (*[]Course, error) {
 	url := fmt.Sprintf("%swebservice/rest/server.php?wstoken=%s&wsfunction=%s&moodlewsrestformat=json&userid=%d", m.base, m.token, "core_enrol_get_users_courses", userId)
 	m.log.Debug("Fetch: %s", url)
