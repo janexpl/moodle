@@ -1376,7 +1376,31 @@ func (m *MoodleApi) GetCourseRoles(courseId int64) (*[]CoursePerson, error) {
 
 	return &results, nil
 }
+func (m *MoodleApi) GetCourseFromId(id int64) (*Course, error) {
+	url := fmt.Sprintf("%swebservice/rest/server."+
+		"php?wstoken=%s&wsfunction=%s&moodlewsrestformat=json&options[ids][0]=%v",
+		m.base,
+		m.token,
+		"core_course_get_courses",
+		id)
+	m.log.Debug("Fetch: %s", url)
+	body, _, _, err := m.fetch.GetUrl(url)
 
+	if err != nil {
+		return nil, err
+	}
+
+	if strings.HasPrefix(body, "{\"exception\":\"") {
+		return nil, errors.New(body)
+	}
+	var result Course
+	if err := json.Unmarshal([]byte(body), &result); err != nil {
+		return nil, errors.New("Server returned unexpected response. " + err.Error())
+	}
+
+	return &result, nil
+
+}
 func (m *MoodleApi) GetCourses(value string) (*[]Course, error) {
 	url := fmt.Sprintf("%swebservice/rest/server.php?wstoken=%s&wsfunction=%s&moodlewsrestformat=json&criterianame=search&criteriavalue=%s", m.base, m.token, "core_course_search_courses", url.QueryEscape(value))
 	m.log.Debug("Fetch: %s", url)
