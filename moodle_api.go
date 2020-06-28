@@ -1393,12 +1393,24 @@ func (m *MoodleApi) GetCourseFromId(id int64) (*Course, error) {
 	if strings.HasPrefix(body, "{\"exception\":\"") {
 		return nil, errors.New(body)
 	}
-	var result Course
-	if err := json.Unmarshal([]byte(body), &result); err != nil {
+	type Result struct {
+		Id          int64  `json:"id"`
+		Code        string `json:"shortname"`
+		Name        string `json:"fullname"`
+		DisplayName string `json:"displayname"`
+		CategoryId  int64  `json:"categoryid"`
+	}
+
+	var results []Result
+	if err := json.Unmarshal([]byte(body), &results); err != nil {
 		return nil, errors.New("Server returned unexpected response. " + err.Error())
 	}
 
-	return &result, nil
+	return &Course{
+		MoodleId: results[0].Id,
+		Code:     results[0].Code,
+		Name:     results[0].Name,
+	}, nil
 
 }
 func (m *MoodleApi) GetCourses(value string) (*[]Course, error) {
